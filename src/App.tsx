@@ -18,12 +18,14 @@ import Payments from "./pages/Payments";
 import Salaries from "./pages/Salaries";
 import Rents from "./pages/Rents";
 import NotFound from "./pages/NotFound";
+import { InstallPWA } from "./components/pwa/InstallPWA";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <InstallPWA />
       <Toaster />
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

@@ -3,9 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Lock, Eye, EyeOff, KeyRound } from "lucide-react";
-
-const STORAGE_KEY = "workops_protected_password";
-const PIN_STORAGE_KEY = "workops_recovery_pin";
+import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 
 interface PasswordGateProps {
     children: React.ReactNode;
@@ -15,6 +13,9 @@ interface PasswordGateProps {
 type Screen = "setup" | "login" | "reset-verify-pin" | "reset-new-password";
 
 export function PasswordGate({ children, pageLabel = "this page" }: PasswordGateProps) {
+    const { data: settings, isLoading } = useSettings();
+    const updateSettings = useUpdateSettings();
+
     const [unlocked, setUnlocked] = useState(false);
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -24,12 +25,13 @@ export function PasswordGate({ children, pageLabel = "this page" }: PasswordGate
     const [screen, setScreen] = useState<Screen>("login");
 
     useEffect(() => {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        setScreen(stored ? "login" : "setup");
-    }, []);
+        if (!isLoading) {
+            setScreen(settings?.password ? "login" : "setup");
+        }
+    }, [isLoading, settings?.password]);
 
     // --- SETUP: Set password + 4-digit PIN ---
-    const handleSetPassword = () => {
+    const handleSetPassword = async () => {
         setError("");
         if (password.length < 4) {
             setError("Password must be at least 4 characters");
@@ -43,8 +45,8 @@ export function PasswordGate({ children, pageLabel = "this page" }: PasswordGate
             setError("Recovery PIN must be exactly 4 digits");
             return;
         }
-        localStorage.setItem(STORAGE_KEY, password);
-        localStorage.setItem(PIN_STORAGE_KEY, pin);
+
+        await updateSettings.mutateAsync({ password, pin });
         setUnlocked(true);
         setPassword("");
         setConfirmPassword("");
@@ -54,8 +56,7 @@ export function PasswordGate({ children, pageLabel = "this page" }: PasswordGate
     // --- LOGIN: Verify password ---
     const handleVerifyPassword = () => {
         setError("");
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (password === stored) {
+        if (password === settings?.password) {
             setUnlocked(true);
             setPassword("");
         } else {
@@ -66,8 +67,7 @@ export function PasswordGate({ children, pageLabel = "this page" }: PasswordGate
     // --- RESET STEP 1: Verify PIN ---
     const handleVerifyPin = () => {
         setError("");
-        const storedPin = localStorage.getItem(PIN_STORAGE_KEY);
-        if (pin === storedPin) {
+        if (pin === settings?.pin) {
             setPin("");
             setPassword("");
             setConfirmPassword("");
@@ -78,7 +78,7 @@ export function PasswordGate({ children, pageLabel = "this page" }: PasswordGate
     };
 
     // --- RESET STEP 2: Set new password ---
-    const handleResetPassword = () => {
+    const handleResetPassword = async () => {
         setError("");
         if (password.length < 4) {
             setError("Password must be at least 4 characters");
@@ -88,7 +88,8 @@ export function PasswordGate({ children, pageLabel = "this page" }: PasswordGate
             setError("Passwords do not match");
             return;
         }
-        localStorage.setItem(STORAGE_KEY, password);
+
+        await updateSettings.mutateAsync({ password });
         setUnlocked(true);
         setPassword("");
         setConfirmPassword("");
@@ -102,6 +103,10 @@ export function PasswordGate({ children, pageLabel = "this page" }: PasswordGate
             else if (screen === "reset-new-password") handleResetPassword();
         }
     };
+
+    if (isLoading) {
+        return <div className="min-h-[60vh] flex items-center justify-center p-4 text-muted-foreground">Loading Security Settings...</div>;
+    }
 
     if (unlocked) {
         return <>{children}</>;

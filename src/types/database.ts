@@ -122,6 +122,14 @@ export interface Rent {
   created_at: string;
 }
 
+export interface GlobalSetting {
+  id: string;
+  password?: string | null;
+  pin?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type TaskStatus = Task['status'];
 export type TaskPriority = Task['priority'];
 export type AttendanceStatus = Attendance['status'];

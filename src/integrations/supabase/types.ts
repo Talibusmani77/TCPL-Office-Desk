@@ -144,6 +144,30 @@ export type Database = {
           },
         ]
       }
+      global_settings: {
+        Row: {
+          created_at: string
+          id: string
+          password: string | null
+          pin: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password?: string | null
+          pin?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password?: string | null
+          pin?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           assigned_to: string | null
