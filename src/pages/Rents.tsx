@@ -10,7 +10,9 @@ import { PasswordGate } from "@/components/auth/PasswordGate";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useRents, useDeleteRent } from "@/hooks/useRents";
 import { Rent } from "@/types/database";
-import { Plus, Pencil, Trash2, IndianRupee, Search, Building } from "lucide-react";
+import { Plus, Pencil, Trash2, IndianRupee, Search, Building, Download } from "lucide-react";
+import { exportToExcel } from "@/utils/exportToExcel";
+import { ExportPasswordDialog } from "@/components/shared/ExportPasswordDialog";
 
 const getRentStatusVariant = (status: string) => {
     switch (status) {
@@ -39,6 +41,7 @@ function RentContent() {
     const [editingRent, setEditingRent] = useState<Rent | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
     const filteredRents = useMemo(() => {
         if (!searchQuery.trim()) return rents;
@@ -160,10 +163,16 @@ function RentContent() {
                         className="pl-9"
                     />
                 </div>
-                <Button onClick={() => setFormOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Rent Record
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2">
+                        <Download className="h-4 w-4" />
+                        Export
+                    </Button>
+                    <Button onClick={() => setFormOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Rent Record
+                    </Button>
+                </div>
             </div>
 
             <DataTable
@@ -188,6 +197,24 @@ function RentContent() {
                 variant="destructive"
                 isLoading={deleteRent.isPending}
                 onConfirm={() => { if (deleteId) { deleteRent.mutate(deleteId, { onSuccess: () => setDeleteId(null) }); } }}
+            />
+
+            <ExportPasswordDialog
+                open={exportDialogOpen}
+                onOpenChange={setExportDialogOpen}
+                onSuccess={() => {
+                    const exportData = filteredRents.map(r => ({
+                        Tenant_Name: r.tenant_name,
+                        Space_Description: r.space_description,
+                        Rent_Month: r.rent_month,
+                        Rent_Amount: r.rent_amount,
+                        Amount_Received: r.amount_received,
+                        Balance_Due: r.balance_due,
+                        Status: r.status,
+                    }));
+                    exportToExcel(exportData, "Rents");
+                }}
+                moduleName="Rents"
             />
         </div>
     );

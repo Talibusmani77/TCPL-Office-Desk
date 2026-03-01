@@ -10,8 +10,10 @@ import { PasswordGate } from "@/components/auth/PasswordGate";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { usePayments, useDeletePayment } from "@/hooks/usePayments";
 import { Payment } from "@/types/database";
-import { Plus, Pencil, Trash2, IndianRupee, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, IndianRupee, Search, Download } from "lucide-react";
 import { format } from "date-fns";
+import { exportToExcel } from "@/utils/exportToExcel";
+import { ExportPasswordDialog } from "@/components/shared/ExportPasswordDialog";
 
 const getPaymentStatusVariant = (status: string) => {
     switch (status) {
@@ -40,6 +42,7 @@ function PaymentContent() {
     const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
     const filteredPayments = useMemo(() => {
         if (!searchQuery.trim()) return payments;
@@ -182,10 +185,16 @@ function PaymentContent() {
                         className="pl-9"
                     />
                 </div>
-                <Button onClick={() => setFormOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Record Payment
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2">
+                        <Download className="h-4 w-4" />
+                        Export
+                    </Button>
+                    <Button onClick={() => setFormOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Record Payment
+                    </Button>
+                </div>
             </div>
 
             <DataTable
@@ -219,6 +228,24 @@ function PaymentContent() {
                         });
                     }
                 }}
+            />
+
+            <ExportPasswordDialog
+                open={exportDialogOpen}
+                onOpenChange={setExportDialogOpen}
+                onSuccess={() => {
+                    const exportData = filteredPayments.map(p => ({
+                        Date: format(new Date(p.payment_date), "MMM d, yyyy"),
+                        Client_Name: p.client_name,
+                        Description: p.description,
+                        Total_Amount: p.total_amount,
+                        Advance_Payment: p.advance_payment,
+                        Final_Payment: p.final_payment,
+                        Status: p.status,
+                    }));
+                    exportToExcel(exportData, "Payments");
+                }}
+                moduleName="Payments"
             />
         </div>
     );

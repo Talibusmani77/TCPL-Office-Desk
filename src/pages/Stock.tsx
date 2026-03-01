@@ -7,8 +7,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { StockFormDialog } from "@/components/stock/StockFormDialog";
 import { useStock, useDeleteStockItem } from "@/hooks/useStock";
 import { StockItem } from "@/types/database";
-import { Plus, Pencil, Trash2, AlertTriangle, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, AlertTriangle, Search, Download } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { exportToExcel } from "@/utils/exportToExcel";
+import { ExportPasswordDialog } from "@/components/shared/ExportPasswordDialog";
 
 export default function Stock() {
     const { data: stockItems = [], isLoading } = useStock();
@@ -18,6 +20,7 @@ export default function Stock() {
     const [editingItem, setEditingItem] = useState<StockItem | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
     const filteredItems = useMemo(() => {
         if (!searchQuery.trim()) return stockItems;
@@ -108,10 +111,16 @@ export default function Stock() {
                             className="pl-9"
                         />
                     </div>
-                    <Button onClick={() => setFormOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Item
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2">
+                            <Download className="h-4 w-4" />
+                            Export
+                        </Button>
+                        <Button onClick={() => setFormOpen(true)}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Item
+                        </Button>
+                    </div>
                 </div>
 
                 <DataTable
@@ -147,6 +156,24 @@ export default function Stock() {
                     }
                 }}
             />
-        </DashboardLayout>
+
+            <ExportPasswordDialog
+                open={exportDialogOpen}
+                onOpenChange={setExportDialogOpen}
+                onSuccess={() => {
+                    const exportData = filteredItems.map(item => ({
+                        Item_Name: item.name,
+                        Category: item.category,
+                        Quantity: item.quantity,
+                        Unit: item.unit,
+                        Min_Level: item.min_stock_level,
+                        Location: item.location || "-",
+                        Status: item.quantity <= item.min_stock_level ? "Low Stock" : "In Stock"
+                    }));
+                    exportToExcel(exportData, "Stock_Inventory");
+                }}
+                moduleName="Stock"
+            />
+        </DashboardLayout >
     );
 }

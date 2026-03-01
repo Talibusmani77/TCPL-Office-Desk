@@ -130,10 +130,50 @@ export interface GlobalSetting {
   updated_at: string;
 }
 
+export interface Measurement {
+  id: string;
+  employee_id?: string | null;
+  site_location: string;
+  site_address?: string | null;
+  length_feet: number;
+  length_inches: number;
+  length_mm: number;
+  length_cm: number;
+  length_m: number;
+  breadth_feet: number;
+  breadth_inches: number;
+  breadth_mm: number;
+  breadth_cm: number;
+  breadth_m: number;
+  measurement_date: string;
+  notes?: string | null;
+  created_at: string;
+  employees?: Employee | null;
+}
+
+export interface WorkRecord {
+  id: string;
+  record_type: 'Challan' | 'Stock Usage' | 'General Reminder';
+  title: string;
+  challan_given: boolean;
+  challan_handover_employee_id?: string | null;
+  challan_handover_custom_name?: string | null;
+  receiving_received: boolean;
+  receiving_handover_employee_id?: string | null;
+  receiving_handover_custom_name?: string | null;
+  stock_used?: string | null;
+  stock_purpose?: string | null;
+  reminder_date?: string | null;
+  notes?: string | null;
+  status: 'Pending' | 'Completed';
+  created_at: string;
+}
+
 export type TaskStatus = Task['status'];
 export type TaskPriority = Task['priority'];
 export type AttendanceStatus = Attendance['status'];
 export type ToolkitStatus = ToolkitAssignment['status'];
-export type PaymentStatus = Payment['status'];
 export type SalaryStatus = Salary['status'];
 export type RentStatus = Rent['status'];
+export type WorkRecordStatus = WorkRecord['status'];
+export type WorkRecordType = WorkRecord['record_type'];

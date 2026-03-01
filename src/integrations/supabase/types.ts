@@ -144,6 +144,64 @@ export type Database = {
           },
         ]
       }
+      measurements: {
+        Row: {
+          breadth_cm: number | null
+          breadth_feet: number | null
+          breadth_inches: number | null
+          breadth_m: number | null
+          breadth_mm: number | null
+          created_at: string
+          employee_id: string | null
+          id: string
+          length_cm: number | null
+          length_feet: number | null
+          length_inches: number | null
+          length_m: number | null
+          length_mm: number | null
+          measurement_date: string
+          notes: string | null
+          site_address: string | null
+          site_location: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          measurement_cm?: number | null
+          measurement_date?: string
+          measurement_feet?: number | null
+          measurement_inches?: number | null
+          measurement_m?: number | null
+          measurement_mm?: number | null
+          notes?: string | null
+          site_address?: string | null
+          site_location: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          measurement_cm?: number | null
+          measurement_date?: string
+          measurement_feet?: number | null
+          measurement_inches?: number | null
+          measurement_m?: number | null
+          measurement_mm?: number | null
+          notes?: string | null
+          site_address?: string | null
+          site_location?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "measurements_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       global_settings: {
         Row: {
           created_at: string
@@ -434,6 +492,75 @@ export type Database = {
           created_at?: string
         }
         Relationships: []
+      }
+      work_records: {
+        Row: {
+          challan_given: boolean | null
+          challan_handover_custom_name: string | null
+          challan_handover_employee_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          receiving_handover_custom_name: string | null
+          receiving_handover_employee_id: string | null
+          receiving_received: boolean | null
+          record_type: string
+          reminder_date: string | null
+          status: string
+          stock_purpose: string | null
+          stock_used: string | null
+          title: string
+        }
+        Insert: {
+          challan_given?: boolean | null
+          challan_handover_custom_name?: string | null
+          challan_handover_employee_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          receiving_handover_custom_name?: string | null
+          receiving_handover_employee_id?: string | null
+          receiving_received?: boolean | null
+          record_type: string
+          reminder_date?: string | null
+          status?: string
+          stock_purpose?: string | null
+          stock_used?: string | null
+          title: string
+        }
+        Update: {
+          challan_given?: boolean | null
+          challan_handover_custom_name?: string | null
+          challan_handover_employee_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          receiving_handover_custom_name?: string | null
+          receiving_handover_employee_id?: string | null
+          receiving_received?: boolean | null
+          record_type?: string
+          reminder_date?: string | null
+          status?: string
+          stock_purpose?: string | null
+          stock_used?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_records_challan_handover_employee_id_fkey"
+            columns: ["challan_handover_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_records_receiving_handover_employee_id_fkey"
+            columns: ["receiving_handover_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {

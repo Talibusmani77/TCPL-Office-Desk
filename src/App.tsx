@@ -17,6 +17,8 @@ import Messages from "./pages/Messages";
 import Payments from "./pages/Payments";
 import Salaries from "./pages/Salaries";
 import Rents from "./pages/Rents";
+import Measurements from "./pages/Measurements";
+import WorkRecords from "./pages/WorkRecords";
 import NotFound from "./pages/NotFound";
 import { InstallPWA } from "./components/pwa/InstallPWA";
 
@@ -52,6 +54,8 @@ const App = () => (
           <Route path="/payments" element={<Payments />} />
           <Route path="/salaries" element={<Salaries />} />
           <Route path="/rents" element={<Rents />} />
+          <Route path="/measurements" element={<Measurements />} />
+          <Route path="/work-records" element={<WorkRecords />} />
 
           {/* Others */}
           <Route path="/audit-reports" element={<AuditReports />} />

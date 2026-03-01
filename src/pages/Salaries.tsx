@@ -9,7 +9,9 @@ import { SalaryFormDialog } from "@/components/salary/SalaryFormDialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useSalaries, useDeleteSalary } from "@/hooks/useSalaries";
 import { Salary } from "@/types/database";
-import { Plus, Pencil, Trash2, IndianRupee, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, IndianRupee, Search, Download } from "lucide-react";
+import { exportToExcel } from "@/utils/exportToExcel";
+import { ExportPasswordDialog } from "@/components/shared/ExportPasswordDialog";
 
 const getSalaryStatusVariant = (status: string) => {
     switch (status) {
@@ -28,6 +30,7 @@ export default function Salaries() {
     const [editingSalary, setEditingSalary] = useState<Salary | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
     const filteredSalaries = useMemo(() => {
         if (!searchQuery.trim()) return salaries;
@@ -158,10 +161,16 @@ export default function Salaries() {
                             className="pl-9"
                         />
                     </div>
-                    <Button onClick={() => setFormOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Salary Record
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2">
+                            <Download className="h-4 w-4" />
+                            Export
+                        </Button>
+                        <Button onClick={() => setFormOpen(true)}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Salary Record
+                        </Button>
+                    </div>
                 </div>
 
                 <DataTable
@@ -188,6 +197,24 @@ export default function Salaries() {
                 isLoading={deleteSalary.isPending}
                 onConfirm={() => { if (deleteId) { deleteSalary.mutate(deleteId, { onSuccess: () => setDeleteId(null) }); } }}
             />
-        </DashboardLayout>
+
+            <ExportPasswordDialog
+                open={exportDialogOpen}
+                onOpenChange={setExportDialogOpen}
+                onSuccess={() => {
+                    const exportData = filteredSalaries.map(s => ({
+                        Employee: s.employees?.name || "N/A",
+                        Month: s.month,
+                        Total_Salary: s.total_salary,
+                        Advance_Given: s.advance_given,
+                        Amount_Paid: s.amount_paid,
+                        Balance: s.balance,
+                        Status: s.status,
+                    }));
+                    exportToExcel(exportData, "Salaries");
+                }}
+                moduleName="Salaries"
+            />
+        </DashboardLayout >
     );
 }

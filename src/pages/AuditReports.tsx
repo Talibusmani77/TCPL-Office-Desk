@@ -8,8 +8,10 @@ import { AuditReportFormDialog } from "@/components/audit-reports/AuditReportFor
 import { Badge } from "@/components/ui/badge";
 import { useAuditReports, useDeleteAuditReport } from "@/hooks/useAuditReports";
 import { AuditReport } from "@/types/database";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Download } from "lucide-react";
 import { format } from "date-fns";
+import { exportToExcel } from "@/utils/exportToExcel";
+import { ExportPasswordDialog } from "@/components/shared/ExportPasswordDialog";
 
 export default function AuditReports() {
   const { data: reports = [], isLoading } = useAuditReports();
@@ -19,6 +21,7 @@ export default function AuditReports() {
   const [editingReport, setEditingReport] = useState<AuditReport | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const filteredReports = useMemo(() => {
     if (!searchQuery.trim()) return reports;
@@ -106,10 +109,16 @@ export default function AuditReports() {
               className="pl-9"
             />
           </div>
-          <Button onClick={() => setFormOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Report
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button onClick={() => setFormOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Report
+            </Button>
+          </div>
         </div>
 
         <DataTable
@@ -144,6 +153,23 @@ export default function AuditReports() {
             });
           }
         }}
+      />
+
+      <ExportPasswordDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        onSuccess={() => {
+          const exportData = filteredReports.map(r => ({
+            Title: r.title,
+            Type: r.report_type,
+            Period_From: format(new Date(r.period_from), "MMM d, yyyy"),
+            Period_To: format(new Date(r.period_to), "MMM d, yyyy"),
+            Remarks: r.remarks || "-",
+            Created_At: format(new Date(r.created_at), "MMM d, yyyy"),
+          }));
+          exportToExcel(exportData, "Audit_Reports");
+        }}
+        moduleName="Audit Reports"
       />
     </DashboardLayout>
   );

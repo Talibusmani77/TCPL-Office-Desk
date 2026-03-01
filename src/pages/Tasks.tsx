@@ -8,8 +8,10 @@ import { TaskFormDialog } from "@/components/tasks/TaskFormDialog";
 import { StatusBadge, getTaskStatusVariant, getPriorityVariant } from "@/components/ui/status-badge";
 import { useTasks, useDeleteTask } from "@/hooks/useTasks";
 import { Task } from "@/types/database";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Download } from "lucide-react";
 import { format } from "date-fns";
+import { exportToExcel } from "@/utils/exportToExcel";
+import { ExportPasswordDialog } from "@/components/shared/ExportPasswordDialog";
 import {
   Select,
   SelectContent,
@@ -28,6 +30,7 @@ export default function Tasks() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const filteredTasks = tasks.filter((task) => {
     if (statusFilter !== "all" && task.status !== statusFilter) return false;
@@ -138,10 +141,16 @@ export default function Tasks() {
             </Select>
           </div>
 
-          <Button onClick={() => setFormOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Task
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button onClick={() => setFormOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Task
+            </Button>
+          </div>
         </div>
 
         <DataTable
@@ -176,6 +185,22 @@ export default function Tasks() {
             });
           }
         }}
+      />
+
+      <ExportPasswordDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        onSuccess={() => {
+          const exportData = filteredTasks.map(t => ({
+            Title: t.title,
+            Assigned_To: t.employees?.name || "Unassigned",
+            Status: t.status,
+            Priority: t.priority,
+            Due_Date: t.due_date ? format(new Date(t.due_date), "MMM d, yyyy") : "-",
+          }));
+          exportToExcel(exportData, "Tasks");
+        }}
+        moduleName="Tasks"
       />
     </DashboardLayout>
   );

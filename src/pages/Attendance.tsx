@@ -16,10 +16,12 @@ import { useAttendance, useUpsertAttendance } from "@/hooks/useAttendance";
 import { useEmployees } from "@/hooks/useEmployees";
 import { Attendance, AttendanceStatus } from "@/types/database";
 import { format } from "date-fns";
-import { CalendarCheck, Save, Eye } from "lucide-react";
+import { CalendarCheck, Save, Eye, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useMonthlyAttendance } from "@/hooks/useMonthlyAttendance";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { exportToExcel } from "@/utils/exportToExcel";
+import { ExportPasswordDialog } from "@/components/shared/ExportPasswordDialog";
 
 const ATTENDANCE_STATUSES: AttendanceStatus[] = ["Present", "Absent", "Half Day", "Leave"];
 
@@ -27,6 +29,7 @@ export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [attendanceMap, setAttendanceMap] = useState<Record<string, AttendanceStatus>>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   // Modal state
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -106,21 +109,21 @@ export default function AttendancePage() {
         const status = getEmployeeStatus(emp.id);
         return (
           <div className="flex items-center justify-between w-full">
-  <StatusBadge variant={getAttendanceVariant(status)}>
-    {status}
-  </StatusBadge>
-  <Button
-    size="sm"
-    variant="outline"
-    onClick={() => {
-      setSelectedEmployeeId(emp.id);
-      setReportMonth(selectedDate.slice(0, 7));
-      setReportModalOpen(true);
-    }}
-  >
-    <Eye className="h-4 w-4 mr-1" /> View
-  </Button>
-</div>
+            <StatusBadge variant={getAttendanceVariant(status)}>
+              {status}
+            </StatusBadge>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setSelectedEmployeeId(emp.id);
+                setReportMonth(selectedDate.slice(0, 7));
+                setReportModalOpen(true);
+              }}
+            >
+              <Eye className="h-4 w-4 mr-1" /> View
+            </Button>
+          </div>
 
         );
       },
@@ -139,10 +142,16 @@ export default function AttendancePage() {
             </div>
           </div>
 
-          <Button onClick={handleSaveAll} disabled={!hasChanges || upsertAttendance.isPending}>
-            <Save className="mr-2 h-4 w-4" />
-            {upsertAttendance.isPending ? "Saving..." : "Save Attendance"}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setExportDialogOpen(true)}>
+              <Download className="mr-2 h-4 w-4" />
+              Export Today
+            </Button>
+            <Button onClick={handleSaveAll} disabled={!hasChanges || upsertAttendance.isPending}>
+              <Save className="mr-2 h-4 w-4" />
+              {upsertAttendance.isPending ? "Saving..." : "Save Attendance"}
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -218,6 +227,21 @@ export default function AttendancePage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <ExportPasswordDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        onSuccess={() => {
+          const exportData = employees.map(e => ({
+            Employee: e.name,
+            Department: e.department || "-",
+            Date: selectedDate,
+            Status: getEmployeeStatus(e.id),
+          }));
+          exportToExcel(exportData, `Attendance_${selectedDate}`);
+        }}
+        moduleName="Attendance"
+      />
     </DashboardLayout>
   );
 }

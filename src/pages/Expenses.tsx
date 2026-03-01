@@ -9,8 +9,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useExpenses, useDeleteExpense } from "@/hooks/useExpenses";
 import { useEmployees } from "@/hooks/useEmployees";
 import { Expense } from "@/types/database";
-import { Plus, Pencil, Trash2, Receipt, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Receipt, Search, Download } from "lucide-react";
 import { format } from "date-fns";
+import { exportToExcel } from "@/utils/exportToExcel";
+import { ExportPasswordDialog } from "@/components/shared/ExportPasswordDialog";
 import {
   Select,
   SelectContent,
@@ -41,6 +43,7 @@ export default function Expenses() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [employeeFilter, setEmployeeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const filteredExpenses = expenses.filter((expense) => {
     if (categoryFilter !== "all" && expense.category !== categoryFilter)
@@ -178,10 +181,16 @@ export default function Expenses() {
             </Select>
           </div>
 
-          <Button onClick={() => setFormOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Expense
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button onClick={() => setFormOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Expense
+            </Button>
+          </div>
         </div>
 
         <DataTable
@@ -217,6 +226,22 @@ export default function Expenses() {
             });
           }
         }}
+      />
+
+      <ExportPasswordDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        onSuccess={() => {
+          const exportData = filteredExpenses.map(e => ({
+            Date: format(new Date(e.expense_date), "MMM d, yyyy"),
+            Employee: e.employees?.name || "N/A",
+            Category: e.category,
+            Amount: e.amount,
+            Description: e.description || "-",
+          }));
+          exportToExcel(exportData, "Expenses");
+        }}
+        moduleName="Expenses"
       />
     </DashboardLayout>
   );

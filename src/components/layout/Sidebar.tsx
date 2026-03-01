@@ -15,6 +15,8 @@ import {
   Building,
   Menu,
   X,
+  Ruler,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
@@ -30,6 +32,8 @@ const navItems = [
   { to: "/payments", icon: CreditCard, label: "Payments" },
   { to: "/salaries", icon: Wallet, label: "Salary" },
   { to: "/rents", icon: Building, label: "Rent" },
+  { to: "/measurements", icon: Ruler, label: "Measurements" },
+  { to: "/work-records", icon: ClipboardList, label: "Work Records" },
   { to: "/audit-reports", icon: FileText, label: "Audit Reports" },
   { to: "/employees", icon: Users, label: "Employees" },
 ];
@@ -133,7 +137,7 @@ export function Sidebar() {
           {/* Footer */}
           <div className="border-t border-sidebar-border p-4">
             <p className="text-xs text-sidebar-foreground/50">
-              © 2024 TCPl-Desk
+              © 2026 TCPl-Desk
             </p>
           </div>
         </div>
