@@ -128,4 +128,13 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply bg-muted-foreground/30 rounded hover:bg-muted-foreground/50;
   }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
