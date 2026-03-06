@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SalaryFormDialog } from "@/components/salary/SalaryFormDialog";
+import { PasswordGate } from "@/components/auth/PasswordGate";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useSalaries, useDeleteSalary } from "@/hooks/useSalaries";
 import { Salary } from "@/types/database";
@@ -114,107 +115,109 @@ export default function Salaries() {
 
     return (
         <DashboardLayout title="Employee Salary" subtitle="Track salaries, advances, and payments">
-            <div className="space-y-4">
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-                    <Card>
-                        <CardContent className="flex items-center gap-3 p-4">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                                <IndianRupee className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">Total Salary</p>
-                                <p className="text-xl font-bold">₹{totalSalary.toLocaleString()}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="flex items-center gap-3 p-4">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10">
-                                <IndianRupee className="h-5 w-5 text-info" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">Advance Given</p>
-                                <p className="text-xl font-bold">₹{totalAdvance.toLocaleString()}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="flex items-center gap-3 p-4">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
-                                <IndianRupee className="h-5 w-5 text-destructive" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">Balance Due</p>
-                                <p className="text-xl font-bold text-destructive">₹{totalBalance.toLocaleString()}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+            <PasswordGate pageLabel="Employee Salary">
+                <div className="space-y-4">
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                        <Card>
+                            <CardContent className="flex items-center gap-3 p-4">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                                    <IndianRupee className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Total Salary</p>
+                                    <p className="text-xl font-bold">₹{totalSalary.toLocaleString()}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="flex items-center gap-3 p-4">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10">
+                                    <IndianRupee className="h-5 w-5 text-info" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Advance Given</p>
+                                    <p className="text-xl font-bold">₹{totalAdvance.toLocaleString()}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="flex items-center gap-3 p-4">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
+                                    <IndianRupee className="h-5 w-5 text-destructive" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Balance Due</p>
+                                    <p className="text-xl font-bold text-destructive">₹{totalBalance.toLocaleString()}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Search by employee or month..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9"
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2">
+                                <Download className="h-4 w-4" />
+                                Export
+                            </Button>
+                            <Button onClick={() => setFormOpen(true)}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Salary Record
+                            </Button>
+                        </div>
+                    </div>
+
+                    <DataTable
+                        columns={columns}
+                        data={filteredSalaries}
+                        isLoading={isLoading}
+                        emptyMessage="No salary records found. Add your first record!"
+                    />
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="relative w-full sm:w-64">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            placeholder="Search by employee or month..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9"
-                        />
-                    </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2">
-                            <Download className="h-4 w-4" />
-                            Export
-                        </Button>
-                        <Button onClick={() => setFormOpen(true)}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Salary Record
-                        </Button>
-                    </div>
-                </div>
-
-                <DataTable
-                    columns={columns}
-                    data={filteredSalaries}
-                    isLoading={isLoading}
-                    emptyMessage="No salary records found. Add your first record!"
+                <SalaryFormDialog
+                    open={formOpen}
+                    onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingSalary(null); }}
+                    salary={editingSalary}
                 />
-            </div>
 
-            <SalaryFormDialog
-                open={formOpen}
-                onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingSalary(null); }}
-                salary={editingSalary}
-            />
+                <ConfirmDialog
+                    open={!!deleteId}
+                    onOpenChange={(open) => !open && setDeleteId(null)}
+                    title="Delete Salary Record"
+                    description="Are you sure you want to delete this salary record? This action cannot be undone."
+                    confirmLabel="Delete"
+                    variant="destructive"
+                    isLoading={deleteSalary.isPending}
+                    onConfirm={() => { if (deleteId) { deleteSalary.mutate(deleteId, { onSuccess: () => setDeleteId(null) }); } }}
+                />
 
-            <ConfirmDialog
-                open={!!deleteId}
-                onOpenChange={(open) => !open && setDeleteId(null)}
-                title="Delete Salary Record"
-                description="Are you sure you want to delete this salary record? This action cannot be undone."
-                confirmLabel="Delete"
-                variant="destructive"
-                isLoading={deleteSalary.isPending}
-                onConfirm={() => { if (deleteId) { deleteSalary.mutate(deleteId, { onSuccess: () => setDeleteId(null) }); } }}
-            />
-
-            <ExportPasswordDialog
-                open={exportDialogOpen}
-                onOpenChange={setExportDialogOpen}
-                onSuccess={() => {
-                    const exportData = filteredSalaries.map(s => ({
-                        Employee: s.employees?.name || "N/A",
-                        Month: s.month,
-                        Total_Salary: s.total_salary,
-                        Advance_Given: s.advance_given,
-                        Amount_Paid: s.amount_paid,
-                        Balance: s.balance,
-                        Status: s.status,
-                    }));
-                    exportToExcel(exportData, "Salaries");
-                }}
-                moduleName="Salaries"
-            />
+                <ExportPasswordDialog
+                    open={exportDialogOpen}
+                    onOpenChange={setExportDialogOpen}
+                    onSuccess={() => {
+                        const exportData = filteredSalaries.map(s => ({
+                            Employee: s.employees?.name || "N/A",
+                            Month: s.month,
+                            Total_Salary: s.total_salary,
+                            Advance_Given: s.advance_given,
+                            Amount_Paid: s.amount_paid,
+                            Balance: s.balance,
+                            Status: s.status,
+                        }));
+                        exportToExcel(exportData, "Salaries");
+                    }}
+                    moduleName="Salaries"
+                />
+            </PasswordGate>
         </DashboardLayout >
     );
 }
