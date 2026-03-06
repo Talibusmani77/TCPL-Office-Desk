@@ -54,6 +54,29 @@ export function useUpsertAttendance() {
   });
 }
 
+export function useBulkUpsertAttendance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (records: UpsertAttendanceInput[]) => {
+      const { data, error } = await supabase
+        .from("attendance")
+        .upsert(records, { onConflict: "employee_id,date" })
+        .select();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      toast({ title: "All attendance records saved successfully" });
+    },
+    onError: (error) => {
+      toast({ title: "Error saving attendance", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
 export function useDeleteAttendance() {
   const queryClient = useQueryClient();
 

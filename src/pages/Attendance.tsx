@@ -12,11 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAttendance, useUpsertAttendance } from "@/hooks/useAttendance";
+import { useAttendance, useUpsertAttendance, useBulkUpsertAttendance } from "@/hooks/useAttendance";
 import { useEmployees } from "@/hooks/useEmployees";
 import { Attendance, AttendanceStatus } from "@/types/database";
 import { format } from "date-fns";
-import { CalendarCheck, Save, Eye, Download } from "lucide-react";
+import { CalendarCheck, Save, Eye, Download, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useMonthlyAttendance } from "@/hooks/useMonthlyAttendance";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,7 +27,7 @@ const ATTENDANCE_STATUSES: AttendanceStatus[] = ["Present", "Absent", "Half Day"
 
 export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [attendanceMap, setAttendanceMap] = useState<Record<string, AttendanceStatus>>({});
+  const [attendanceMap, setAttendanceMap] = useState<Record<string, AttendanceStatus | "Unmarked">>({});
   const [hasChanges, setHasChanges] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
@@ -37,17 +37,18 @@ export default function AttendancePage() {
   const [reportMonth, setReportMonth] = useState(selectedDate.slice(0, 7)); // yyyy-MM
 
   const { data: employees = [], isLoading: loadingEmployees } = useEmployees();
-  const { data: attendance = [], isLoading: loadingAttendance } = useAttendance(selectedDate);
+  const { data: attendanceData = [], isLoading: loadingAttendance } = useAttendance(selectedDate);
   const upsertAttendance = useUpsertAttendance();
+  const bulkUpsertAttendance = useBulkUpsertAttendance();
 
   // Monthly summary for modal
   const { data: monthlySummary } = useMonthlyAttendance(selectedEmployeeId, reportMonth);
 
   // Build current attendance state
-  const getEmployeeStatus = (employeeId: string): AttendanceStatus => {
+  const getEmployeeStatus = (employeeId: string): AttendanceStatus | "Unmarked" => {
     if (attendanceMap[employeeId] !== undefined) return attendanceMap[employeeId];
-    const existing = attendance.find((a) => a.employee_id === employeeId);
-    return existing?.status || "Present";
+    const existing = attendanceData.find((a) => a.employee_id === employeeId);
+    return existing?.status || "Unmarked";
   };
 
   const handleStatusChange = (employeeId: string, status: AttendanceStatus) => {
@@ -56,17 +57,36 @@ export default function AttendancePage() {
   };
 
   const handleSaveAll = async () => {
-    const updates = Object.entries(attendanceMap).map(([employee_id, status]) =>
-      upsertAttendance.mutateAsync({ employee_id, date: selectedDate, status })
-    );
+    const records = Object.entries(attendanceMap).map(([employee_id, status]) => ({
+      employee_id,
+      date: selectedDate,
+      status: status === "Unmarked" ? "Present" : status as AttendanceStatus
+    }));
+
+    if (records.length === 0) return;
 
     try {
-      await Promise.all(updates);
+      await bulkUpsertAttendance.mutateAsync(records);
       setAttendanceMap({});
       setHasChanges(false);
-      toast({ title: "Attendance saved successfully" });
-    } catch {
-      toast({ title: "Error saving attendance", variant: "destructive" });
+    } catch (error) {
+      console.error("Save error:", error);
+    }
+  };
+
+  const handleMarkAllPresent = () => {
+    const updates: Record<string, AttendanceStatus> = {};
+    employees.forEach(emp => {
+      const currentStatus = getEmployeeStatus(emp.id);
+      if (currentStatus === "Unmarked") {
+        updates[emp.id] = "Present";
+      }
+    });
+
+    if (Object.keys(updates).length > 0) {
+      setAttendanceMap(prev => ({ ...prev, ...updates }));
+      setHasChanges(true);
+      toast({ title: `Marked ${Object.keys(updates).length} employees as Present` });
     }
   };
 
@@ -79,6 +99,8 @@ export default function AttendancePage() {
   // Stats for selected date
   const presentCount = employees.filter((e) => getEmployeeStatus(e.id) === "Present").length;
   const absentCount = employees.filter((e) => getEmployeeStatus(e.id) === "Absent").length;
+  const markedCount = employees.filter((e) => getEmployeeStatus(e.id) !== "Unmarked").length;
+  const pendingCount = employees.length - markedCount;
 
   const columns = [
     { key: "name", header: "Employee" },
@@ -143,13 +165,17 @@ export default function AttendancePage() {
           </div>
 
           <div className="flex gap-2">
+            <Button variant="outline" onClick={handleMarkAllPresent} disabled={pendingCount === 0}>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Mark All Present
+            </Button>
             <Button variant="outline" onClick={() => setExportDialogOpen(true)}>
               <Download className="mr-2 h-4 w-4" />
               Export Today
             </Button>
-            <Button onClick={handleSaveAll} disabled={!hasChanges || upsertAttendance.isPending}>
+            <Button onClick={handleSaveAll} disabled={!hasChanges || bulkUpsertAttendance.isPending}>
               <Save className="mr-2 h-4 w-4" />
-              {upsertAttendance.isPending ? "Saving..." : "Save Attendance"}
+              {bulkUpsertAttendance.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </div>
@@ -158,15 +184,19 @@ export default function AttendancePage() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Employees</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Marked Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{employees.length}</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-primary">{markedCount}</p>
+                <p className="text-sm text-muted-foreground">/ {employees.length}</p>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">{pendingCount} employees pending</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Present</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Present Today</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold text-success">{presentCount}</p>
@@ -174,7 +204,7 @@ export default function AttendancePage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Absent</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Absent Today</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold text-destructive">{absentCount}</p>
@@ -185,48 +215,49 @@ export default function AttendancePage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Attendance Rate</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{employees.length > 0 ? Math.round((presentCount / employees.length) * 100) : 0}%</p>
+              <p className="text-2xl font-bold">{markedCount > 0 ? Math.round((presentCount / markedCount) * 100) : 0}%</p>
+              <p className="text-xs text-muted-foreground mt-1">Based on marked records</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Attendance Table */}
         <DataTable columns={columns} data={employees.map((e) => ({ ...e, id: e.id }))} isLoading={loadingEmployees || loadingAttendance} emptyMessage="No employees found. Add employees first!" />
-
-        {/* Monthly Report Modal */}
-        <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Monthly Attendance Summary</DialogTitle>
-            </DialogHeader>
-
-            {/* Month Selector */}
-            <div className="mb-4">
-              <input
-                type="month"
-                value={reportMonth}
-                onChange={(e) => setReportMonth(e.target.value)}
-                className="border rounded px-3 py-2"
-              />
-            </div>
-
-            {/* Summary Cards */}
-            <div className="grid grid-cols-4 gap-4">
-              {monthlySummary &&
-                Object.entries(monthlySummary).map(([status, count]) => (
-                  <Card key={status}>
-                    <CardHeader>
-                      <CardTitle className="text-sm">{status}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-bold">{count}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Monthly Report Modal */}
+      <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Monthly Attendance Summary</DialogTitle>
+          </DialogHeader>
+
+          {/* Month Selector */}
+          <div className="mb-4">
+            <input
+              type="month"
+              value={reportMonth}
+              onChange={(e) => setReportMonth(e.target.value)}
+              className="border rounded px-3 py-2"
+            />
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-4 gap-4">
+            {monthlySummary &&
+              Object.entries(monthlySummary).map(([status, count]) => (
+                <Card key={status}>
+                  <CardHeader>
+                    <CardTitle className="text-sm">{status}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold">{count}</p>
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <ExportPasswordDialog
         open={exportDialogOpen}
@@ -242,6 +273,6 @@ export default function AttendancePage() {
         }}
         moduleName="Attendance"
       />
-    </DashboardLayout>
+    </DashboardLayout >
   );
 }
